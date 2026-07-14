@@ -1,7 +1,20 @@
 # fbrglm
 
+[![DOI](https://zenodo.org/badge/1263438696.svg)](https://doi.org/10.5281/zenodo.21015223)
+[![Companion: fbrglm-experiments DOI](https://zenodo.org/badge/1263440115.svg)](https://doi.org/10.5281/zenodo.21016035)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/fbrglm)](https://CRAN.R-project.org/package=fbrglm)
+[![Downloads](https://cranlogs.r-pkg.org/badges/fbrglm)](https://CRAN.R-project.org/package=fbrglm)
+[![Total Downloads](https://cranlogs.r-pkg.org/badges/grand-total/fbrglm?color=orange)](https://CRAN.R-project.org/package=fbrglm)
+[![fbrglm status badge](https://dsc-chiba-u.r-universe.dev/badges/fbrglm)](https://dsc-chiba-u.r-universe.dev/fbrglm)
+[![:name status badge](https://dsc-chiba-u.r-universe.dev/badges/:name)](https://dsc-chiba-u.r-universe.dev)
+[![:registry status badge](https://dsc-chiba-u.r-universe.dev/badges/:registry)](https://github.com/r-universe/dsc-chiba-u)
+[![:total status badge](https://dsc-chiba-u.r-universe.dev/badges/:total)](https://dsc-chiba-u.r-universe.dev)
+[![R-CMD-check](https://github.com/dsc-chiba-u/fbrglm/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dsc-chiba-u/fbrglm/actions/workflows/R-CMD-check.yaml)
+[![DockerHub/GHCR](https://github.com/dsc-chiba-u/fbrglm/actions/workflows/build_test_push.yml/badge.svg)](https://github.com/dsc-chiba-u/fbrglm/actions/workflows/build_test_push.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Safe formula-based wrapper around
-[`glmnet`](https://cran.r-project.org/package=glmnet): bring `glm()`'s
+[`glmnet`](https://CRAN.R-project.org/package=glmnet): bring `glm()`'s
 strict modeling-workflow semantics — formula + data in, predict-time
 design matrix reconstructed from a frozen recipe out — to L1 / L2 /
 elastic-net regularized GLMs.
