@@ -74,9 +74,15 @@ print.fbrglm <- function(x, ...) {
     }
     ri <- x$rank_info
     if (isTRUE(ri$rank_deficient)) {
-        cat(sprintf("Rank deficiency: %d / %d columns dropped (NA in coef): %s\n",
-                    length(ri$dropped_cols), ri$ncol,
-                    paste(ri$dropped_cols, collapse = ", ")))
+        if (isTRUE(ri$dropped_applied)) {
+            cat(sprintf("Rank deficiency: %d / %d columns dropped (NA in coef): %s\n",
+                        length(ri$dropped_cols), ri$ncol,
+                        paste(ri$dropped_cols, collapse = ", ")))
+        } else {
+            cat(sprintf("Rank deficiency: %d / %d columns linearly dependent (rank_policy = \"keep\", not dropped): %s\n",
+                        length(ri$dropped_cols), ri$ncol,
+                        paste(ri$dropped_cols, collapse = ", ")))
+        }
     }
     invisible(x)
 }
@@ -119,7 +125,11 @@ print.summary.fbrglm <- function(x, ...) {
                 ni$n_total, ni$n_dropped_missing, ni$n_used))
 
     ri <- x$rank_info
-    rd <- isTRUE(ri$rank_deficient)
+    ## Only report "not defined because of singularities" when columns
+    ## were actually dropped. With rank_policy = "keep" the penalty
+    ## disambiguates and every column receives a coefficient, so the
+    ## glm()-style header is not appropriate.
+    rd <- isTRUE(ri$dropped_applied)
     header <- if (rd) {
         sprintf("Coefficients: (%d not defined because of singularities: %s)",
                 length(ri$dropped_cols),
@@ -174,6 +184,7 @@ predict.fbrglm <- function(object,
     type          <- match.arg(type)
     on_new_levels <- match.arg(on_new_levels)
     novel_rows    <- logical(0)   # length 0 -> no NA masking at the end
+    na_rows       <- logical(0)   # NA values in newdata, masked at the end
 
     if (is.null(newdata)) {
         X <- object$x_train
@@ -215,9 +226,18 @@ predict.fbrglm <- function(object,
         }
 
         Terms <- stats::delete.response(object$terms)
-        mf <- stats::model.frame(Terms, newdata, xlev = object$xlevels)
+        mf <- stats::model.frame(Terms, newdata, xlev = object$xlevels,
+                                 na.action = stats::na.pass)
         X_full <- stats::model.matrix(Terms, mf,
                                       contrasts.arg = object$contrasts)
+        ## Rows with NA in any required column reach model.matrix as
+        ## NA-bearing. Preserve row alignment with `newdata` by zeroing
+        ## them here and masking the prediction at the end - same
+        ## contract as the on_new_levels = "na" novel-level branch.
+        na_rows <- rowSums(is.na(X_full)) > 0L
+        if (any(na_rows)) {
+            X_full[na_rows, ] <- 0
+        }
         intercept_idx <- which(colnames(X_full) == "(Intercept)")
         X <- if (length(intercept_idx)) {
             X_full[, -intercept_idx, drop = FALSE]
@@ -229,14 +249,15 @@ predict.fbrglm <- function(object,
         ## above (on_new_levels = "error", the glm() default) or were
         ## substituted to the reference and will be NA'd out below.
         X <- .fbrglm_align_x(X, object$x_colnames)
-        ## If the model was fit with rank-deficient drops, restrict
-        ## newdata to the same kept columns the underlying glmnet fit
-        ## actually saw. NA-valued coefficients live in `coefficients`,
-        ## not in the underlying glmnet object.
-        kept_cols <- object$rank_info$kept_cols
-        if (!is.null(kept_cols) &&
-            length(object$rank_info$dropped_cols)) {
-            X <- X[, kept_cols, drop = FALSE]
+        ## If the model was fit with columns actually dropped
+        ## (rank_policy = "drop" and rank-deficient), restrict newdata
+        ## to the same kept columns the underlying glmnet fit saw.
+        ## Under rank_policy = "keep" glmnet saw the full design, so
+        ## we must pass the full design here too. NA-valued
+        ## coefficients live in `coefficients`, not in the underlying
+        ## glmnet object.
+        if (isTRUE(object$rank_info$dropped_applied)) {
+            X <- X[, object$rank_info$kept_cols, drop = FALSE]
         }
     }
 
@@ -279,11 +300,15 @@ predict.fbrglm <- function(object,
     fam_name <- .fbrglm_family_label(object)
 
     .mask_novel <- function(out) {
-        if (!length(novel_rows) || !any(novel_rows)) return(out)
+        masked <- if (length(novel_rows)) novel_rows else logical(0)
+        if (length(na_rows)) {
+            masked <- if (length(masked)) masked | na_rows else na_rows
+        }
+        if (!length(masked) || !any(masked)) return(out)
         if (is.matrix(out)) {
-            out[novel_rows, ] <- NA
+            out[masked, ] <- NA
         } else {
-            out[novel_rows] <- NA
+            out[masked] <- NA
         }
         out
     }
@@ -521,6 +546,8 @@ glance.fbrglm <- function(x, ...) {
         rank              = ri$rank,
         rank_dropped      = length(ri$dropped_cols),
         rank_deficient    = isTRUE(ri$rank_deficient),
+        rank_policy       = ri$policy %||% "drop",
+        rank_dropped_applied = isTRUE(ri$dropped_applied),
         nonzero           = nz,
         deviance          = .fbrglm_deviance(x),
         cvm_at_lambda     = .fbrglm_cv_stat(x, "cvm"),

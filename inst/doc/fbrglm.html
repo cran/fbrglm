@@ -351,11 +351,25 @@ R’s <code>glm()</code> — a <code>formula</code> +
 filtering, and the familiar S3 methods (<code>print</code>,
 <code>summary</code>, <code>coef</code>, <code>predict</code>,
 <code>nobs</code>, <code>plot</code>).</p>
-<p>The MVP described here is <code>infer = &quot;none&quot;</code>: it returns
-regularized point estimates and <strong>does not</strong> report
-classical standard errors, z values, p values, or confidence intervals.
-Honest post-selection inference (via data splitting or selective
-inference) is on the roadmap; see the package <code>TODO.md</code>.</p>
+<p>The current release runs under <code>infer = &quot;none&quot;</code>: it
+returns regularized point estimates and <strong>does not</strong> report
+classical standard errors, z values, p values, or confidence intervals —
+these are not valid classical quantities for a penalized fit, so fbrglm
+suppresses them by default. Honest post-selection inference (via data
+splitting or selective inference) is on the roadmap; see the package
+<code>TODO.md</code>.</p>
+<p>For two longer end-to-end walkthroughs, see the sibling
+vignettes:</p>
+<ul>
+<li><code>vignette(&quot;fbrglm-real-data&quot;)</code> — a real-data pipeline on
+<code>MASS::birthwt</code> from read → split → fit → predict → evaluate
+→ visualize → reuse.</li>
+<li><code>vignette(&quot;fbrglm-migration&quot;)</code> — the same logistic model
+written three ways (<code>stats::glm</code>, raw <code>glmnet</code>,
+and <code>fbrglm</code>), with a side-by-side comparison table.</li>
+<li><code>vignette(&quot;fbrglm-families&quot;)</code> — the full family catalog
+with a worked example per family.</li>
+</ul>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(fbrglm)</span></code></pre></div>
 </div>
 <div id="a-small-binomial-example" class="section level2">
@@ -549,24 +563,36 @@ object (the <code>$glmnet.fit</code> slot when the wrapper used CV).
 <code>as_cv_glmnet()</code> returns the <code>cv.glmnet</code> object,
 or <code>NULL</code> for the <code>&quot;fix&quot;</code> λ path.</p>
 </div>
-<div id="limitations-intentional" class="section level2">
-<h2>Limitations (intentional)</h2>
-<p>The MVP is deliberately narrow:</p>
+<div id="scope-of-the-current-release" class="section level2">
+<h2>Scope of the current release</h2>
+<p><strong>Supported (core)</strong> — <code>gaussian</code>,
+<code>binomial</code>, <code>poisson</code>, arbitrary
+<code>stats::family</code> objects (including
+<code>stats::Gamma</code>), and fixed-theta negative binomial via
+<code>MASS::negative.binomial(theta = ...)</code>.</p>
+<p><strong>Supported (experimental)</strong> — native Cox
+(<code>family = &quot;cox&quot;</code> with a <code>survival::Surv()</code>
+response), <code>multinomial</code>, and <code>mgaussian</code>. These
+paths are exercised by the tests but not yet validated across the full
+range of specialised uses (Cox strata / tie handling, multinomial
+grouped / ungrouped, etc.); the family-catalog vignette
+(<code>vignette(&quot;fbrglm-families&quot;)</code>) shows the working shape of
+each.</p>
+<p><strong>Not implemented / out of scope</strong></p>
 <ul>
-<li>only <code>infer = &quot;none&quot;</code> is implemented;
-<code>&quot;split&quot;</code> and <code>&quot;selective&quot;</code> are planned but not in
-this release.</li>
-<li>families: <code>gaussian</code>, <code>binomial</code>,
-<code>poisson</code> only. <code>multinomial</code> and <code>cox</code>
-will land later.</li>
-<li>the <code>x</code> / <code>y</code> direct-matrix entry point is
-reserved but not yet supported — supply <code>formula</code> +
+<li><code>infer = &quot;split&quot;</code> and <code>infer = &quot;selective&quot;</code> —
+planned; only <code>infer = &quot;none&quot;</code> is implemented in this
+release.</li>
+<li>Classical <code>glm()</code>-style standard errors, z / p values,
+and confidence intervals — intentionally suppressed under
+<code>infer = &quot;none&quot;</code> (regularized point estimates do not have a
+valid classical Wald sampling distribution).</li>
+<li>Joint theta estimation in the spirit of <code>MASS::glm.nb()</code>
+— pass a fixed theta to <code>MASS::negative.binomial()</code>
+directly.</li>
+<li>The <code>x</code> / <code>y</code> direct-matrix entry point is
+reserved but not yet wired; supply <code>formula</code> +
 <code>data</code> instead.</li>
-<li>classical <code>glm()</code>-style standard errors, z / p values,
-and confidence intervals are intentionally <strong>not</strong> shown
-for <code>infer = &quot;none&quot;</code>. Doing so naively for regularized
-estimators would be misleading; honest inference is the next
-milestone.</li>
 </ul>
 <p>Reproducible benchmarks against raw <code>glmnet</code>,
 <code>glmnetUtils</code>, and a <code>parsnip</code> /

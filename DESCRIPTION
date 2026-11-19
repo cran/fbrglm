@@ -1,6 +1,6 @@
 Package: fbrglm
 Title: Safe Formula-Based Regularized Generalized Linear Models
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
     person(given = "Koki",
            family = "Tsuyuzaki",
@@ -32,8 +32,8 @@ Suggests: testthat (>= 3.0.0), knitr, rmarkdown, survival, MASS
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2026-07-14 08:14:20 UTC; koki
+Packaged: 2026-11-19 12:24:47 UTC; koki
 Author: Koki Tsuyuzaki [aut, cre]
 Maintainer: Koki Tsuyuzaki <k.t.the-answer@hotmail.co.jp>
 Repository: CRAN
-Date/Publication: 2026-07-14 08:30:02 UTC
+Date/Publication: 2026-11-19 12:40:02 UTC
